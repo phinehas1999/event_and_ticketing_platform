@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter(); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function LoginPage() {
     } else if (role === "ORGANIZER") {
       router.push("/organizer/dashboard");
     } else {
-      router.push("/dashboard");
+      router.push("/events");
     }
 
     router.refresh();
