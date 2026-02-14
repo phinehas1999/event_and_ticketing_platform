@@ -19,17 +19,21 @@ export async function GET(
     }
 
     const { id: eventId } = await params;
-    console.log("Fetching event:", eventId, "for user:", session.user.id, "role:", session.user.role);
+    console.log(
+      "Fetching event:",
+      eventId,
+      "for user:",
+      session.user.id,
+      "role:",
+      session.user.role,
+    );
 
-    const whereClause = session.user.role === "ADMIN"
-      ? eq(events.id, eventId)
-      : and(eq(events.id, eventId), eq(events.organizerId, session.user.id));
+    const whereClause =
+      session.user.role === "ADMIN"
+        ? eq(events.id, eventId)
+        : and(eq(events.id, eventId), eq(events.organizerId, session.user.id));
 
-    const result = await db
-      .select()
-      .from(events)
-      .where(whereClause)
-      .limit(1);
+    const result = await db.select().from(events).where(whereClause).limit(1);
 
     console.log("Query result:", result);
 
@@ -105,7 +109,10 @@ export async function PATCH(
       .where(
         session.user.role === "ADMIN"
           ? eq(events.id, eventId)
-          : and(eq(events.id, eventId), eq(events.organizerId, session.user.id)),
+          : and(
+              eq(events.id, eventId),
+              eq(events.organizerId, session.user.id),
+            ),
       )
       .returning({ id: events.id });
 
