@@ -56,7 +56,7 @@ async function getOrganizerStats(userId: string) {
     })
     .from(payments)
     .where(
-      and(inArray(payments.eventId, eventIds), eq(payments.status, "PENDING"))
+      and(inArray(payments.eventId, eventIds), eq(payments.status, "PENDING")),
     )
     .limit(5);
 
@@ -117,11 +117,19 @@ export default async function OrganizerDashboardPage() {
             icon={<CreditCard className="w-6 h-6 text-emerald-400" />}
             trend="+12% from last month"
           />
-          <StatCard
-            title="Tickets Sold"
-            value={data.stats.ticketsSold.toString()}
-            icon={<Ticket className="w-6 h-6 text-blue-400" />}
-          />
+          <Link href="/organizer/events/sales" className="group">
+            <StatCard
+              title="Tickets Sold"
+              value={data.stats.ticketsSold.toString()}
+              icon={<Ticket className="w-6 h-6 text-blue-400" />}
+              cta={
+                <span className="text-sm text-indigo-300 hover:text-white flex items-center gap-1">
+                  View more
+                  <ArrowUpRight className="w-4 h-4" />
+                </span>
+              }
+            />
+          </Link>
           <StatCard
             title="Pending Approvals"
             value={data.stats.pendingPayments.toString()}
