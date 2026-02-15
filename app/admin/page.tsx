@@ -2,8 +2,8 @@ import { requireAdmin } from "@/lib/guards";
 import Navbar from "@/components/navbar";
 import Link from "next/link";
 import { db } from "@/db";
-import { events, users, payments } from "@/db/schema";
-import { sql, desc } from "drizzle-orm";
+import { events, users, payments, tickets } from "@/db/schema";
+import { sql, desc, eq, inArray, and } from "drizzle-orm";
 import { CalendarDays, Users, CreditCard, Clock, Plus } from "lucide-react";
 import { StatCard } from "@/app/organizer/dashboard/components/stat-card";
 
@@ -32,6 +32,26 @@ async function getAdminStats() {
     .where(sql`status = 'APPROVED'`);
   const revenue = Number((revenueRes as any)[0]?.rev ?? 0);
 
+  // Admin profit: compute per-payment fee at 5% and VAT 15% on the fee, rounding per-payment
+  const approvedPaymentsRes = await db
+    .select({ amount: payments.amount })
+    .from(payments)
+    .where(sql`status = 'APPROVED'`);
+
+  const approvedAmounts: number[] = (approvedPaymentsRes as any).map(
+    (r: any) => Number(r.amount ?? 0),
+  );
+
+  let serviceFee = 0;
+  let vat = 0;
+  for (const amt of approvedAmounts) {
+    const fee = Math.round(amt * 0.05);
+    const feeVat = Math.round(fee * 0.15);
+    serviceFee += fee;
+    vat += feeVat;
+  }
+  const adminProfit = serviceFee - vat;
+
   const pendingPaymentsRes = await db
     .select({ cnt: sql<number>`count(*)` })
     .from(payments)
@@ -44,13 +64,55 @@ async function getAdminStats() {
     .orderBy(desc(events.createdAt))
     .limit(5);
 
+  // Per-organizer financials
+  const organizers = await db
+    .select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(sql`role = 'ORGANIZER'`)
+    .orderBy(desc(users.createdAt));
+
+  const organizerFinance = await Promise.all(
+    organizers.map(async (org: any) => {
+      const evs = await db
+        .select({ id: events.id })
+        .from(events)
+        .where(eq(events.organizerId, org.id));
+      const eventIds = evs.map((e: any) => e.id);
+      if (eventIds.length === 0)
+        return { id: org.id, name: org.name, ticketsSold: 0, revenue: 0 };
+
+      const ticketsCountRes = await db
+        .select({ cnt: sql<number>`count(*)` })
+        .from(tickets)
+        .where(inArray(tickets.eventId, eventIds));
+      const ticketsSold = Number((ticketsCountRes as any)[0]?.cnt ?? 0);
+
+      const revenueRes = await db
+        .select({ rev: sql<number>`coalesce(sum(${payments.amount}), 0)` })
+        .from(payments)
+        .where(
+          and(
+            inArray(payments.eventId, eventIds),
+            eq(payments.status, "APPROVED"),
+          ),
+        );
+      const revenue = Number((revenueRes as any)[0]?.rev ?? 0);
+
+      return { id: org.id, name: org.name, ticketsSold, revenue };
+    }),
+  );
+
   return {
     totalEvents,
     totalUsers,
     totalOrganizers,
     revenue,
+    serviceFee,
+    vat,
+    adminProfit,
     pendingPayments,
     recentEvents,
+    organizerFinance,
   };
 }
 
@@ -191,24 +253,89 @@ export default async function AdminPage() {
             <div className="glass-card rounded-2xl p-6 h-fit">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-400">Total Revenue</div>
-                  <div className="font-bold">
-                    {formatCurrency(stats.revenue)}
+                  <div className="space-y-2 w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-400">Gross Revenue</div>
+                      <div className="font-semibold">
+                        {formatCurrency(stats.revenue)}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-400">
+                        Service Fee (3%)
+                      </div>
+                      <div className="">{formatCurrency(stats.serviceFee)}</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-400">
+                        VAT (15% on fee)
+                      </div>
+                      <div className="">{formatCurrency(stats.vat)}</div>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="text-sm text-gray-400">Admin Profit</div>
+                      <div className="font-bold">
+                        {formatCurrency(stats.adminProfit)}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-400">Pending Payments</div>
                   <div className="font-bold">{stats.pendingPayments}</div>
                 </div>
-                <div className="pt-2">
+                <div className="pt-2 flex justify-end">
                   <Link
-                    href="/admin/payments"
+                    href="/admin/financials"
                     className="text-sm text-indigo-400"
                   >
-                    Review Payments
+                    View more
                   </Link>
                 </div>
               </div>
+            </div>
+            <div className="mt-4 glass-card rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm text-gray-300">By Organizer</h3>
+                <Link
+                  href="/admin/organizers/finance"
+                  className="text-sm text-indigo-300"
+                >
+                  View more
+                </Link>
+              </div>
+              {stats.organizerFinance.length === 0 ? (
+                <p className="text-gray-400">No organizers yet.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {stats.organizerFinance.slice(0, 2).map((o: any) => (
+                    <li
+                      key={o.id}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="font-medium text-sm">
+                          {o.name || "(no name)"}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Tickets: {o.ticketsSold}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatCurrency(o.revenue)}
+                        </div>
+                        <Link
+                          href={`/admin/organizers/${o.id}`}
+                          className="text-sm text-indigo-300"
+                        >
+                          View
+                        </Link>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
