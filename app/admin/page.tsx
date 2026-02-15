@@ -117,7 +117,7 @@ async function getAdminStats() {
 }
 
 export default async function AdminPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const stats = await getAdminStats();
 
@@ -136,7 +136,9 @@ export default async function AdminPage() {
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-indigo-400 to-violet-400">
               Admin Dashboard
             </h1>
-            <p className="text-slate-400 mt-1">Administrator control panel.</p>
+            <p className="text-slate-300 mt-1">
+              Hi, {session?.user?.name ?? "Admin"}
+            </p>
           </div>
 
           <div className="flex gap-3">
