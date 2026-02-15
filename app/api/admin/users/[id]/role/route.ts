@@ -20,9 +20,16 @@ export async function POST(
   if (!role)
     return NextResponse.json({ error: "Missing role" }, { status: 400 });
 
+  // Only allow valid roles
+  const allowedRoles = ["USER", "ORGANIZER", "ADMIN"] as const;
+  type Role = (typeof allowedRoles)[number];
+  if (!allowedRoles.includes(role as Role)) {
+    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
+
   const [updated] = await db
     .update(users)
-    .set({ role })
+    .set({ role: role as Role })
     .where(eq(users.id, id))
     .returning();
 
