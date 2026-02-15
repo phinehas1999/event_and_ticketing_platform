@@ -36,38 +36,73 @@ async function getOrganizerStats(userId: string) {
     };
   }
 
-  // 3. Fetch Ticket Stats (Total Sold)
-  const ticketStats = await db
-    .select({
-      sold: sql<number>`sum(${ticketTypes.quantitySold})`,
-      revenue: sql<number>`sum(${ticketTypes.quantitySold} * ${ticketTypes.price})`,
-    })
-    .from(ticketTypes)
-    .where(inArray(ticketTypes.eventId, eventIds));
+  // 3. Tickets sold — count from tickets table
+  const ticketsCountRes = await db
+    .select({ cnt: sql<number>`count(*)` })
+    .from(tickets)
+    .where(inArray(tickets.eventId, eventIds));
 
-  // 4. Fetch Pending Payments (Bank Transfers needing review)
-  const pendingPayments = await db
+  const ticketsSold = Number((ticketsCountRes as any)[0]?.cnt ?? 0);
+
+  // 4. Revenue — sum of APPROVED payments for these events
+  const revenueRes = await db
+    .select({ rev: sql<number>`coalesce(sum(${payments.amount}), 0)` })
+    .from(payments)
+    .where(
+      and(inArray(payments.eventId, eventIds), eq(payments.status, "APPROVED")),
+    );
+
+  const revenue = Number((revenueRes as any)[0]?.rev ?? 0);
+
+  // 5. Payment counts by status
+  const pendingCountRes = await db
+    .select({ cnt: sql<number>`count(*)` })
+    .from(payments)
+    .where(
+      and(inArray(payments.eventId, eventIds), eq(payments.status, "PENDING")),
+    );
+  const approvedCountRes = await db
+    .select({ cnt: sql<number>`count(*)` })
+    .from(payments)
+    .where(
+      and(inArray(payments.eventId, eventIds), eq(payments.status, "APPROVED")),
+    );
+  const rejectedCountRes = await db
+    .select({ cnt: sql<number>`count(*)` })
+    .from(payments)
+    .where(
+      and(inArray(payments.eventId, eventIds), eq(payments.status, "REJECTED")),
+    );
+
+  const pendingPaymentsCount = Number((pendingCountRes as any)[0]?.cnt ?? 0);
+  const approvedPaymentsCount = Number((approvedCountRes as any)[0]?.cnt ?? 0);
+  const rejectedPaymentsCount = Number((rejectedCountRes as any)[0]?.cnt ?? 0);
+
+  // 6. Recent payments (any status)
+  const recentPayments = await db
     .select({
       id: payments.id,
       amount: payments.amount,
+      status: payments.status,
       userName: sql<string>`(SELECT name FROM users WHERE users.id = ${payments.userId})`,
       eventName: sql<string>`(SELECT title FROM events WHERE events.id = ${payments.eventId})`,
       createdAt: payments.createdAt,
     })
     .from(payments)
-    .where(
-      and(inArray(payments.eventId, eventIds), eq(payments.status, "PENDING")),
-    )
+    .where(inArray(payments.eventId, eventIds))
+    .orderBy(desc(payments.createdAt))
     .limit(5);
 
   return {
     events: myEvents,
     stats: {
-      revenue: ticketStats[0]?.revenue || 0,
-      ticketsSold: ticketStats[0]?.sold || 0,
-      pendingPayments: pendingPayments.length,
+      revenue,
+      ticketsSold,
+      pendingPayments: pendingPaymentsCount,
+      approvedPayments: approvedPaymentsCount,
+      rejectedPayments: rejectedPaymentsCount,
     },
-    recentPayments: pendingPayments,
+    recentPayments,
   };
 }
 
@@ -131,10 +166,11 @@ export default async function OrganizerDashboardPage() {
             />
           </Link>
           <StatCard
-            title="Pending Approvals"
+            title="Payments (Pending)"
             value={data.stats.pendingPayments.toString()}
             icon={<Clock className="w-6 h-6 text-amber-400" />}
             alert={data.stats.pendingPayments > 0}
+            trend={`A: ${data.stats.approvedPayments} • R: ${data.stats.rejectedPayments}`}
           />
         </section>
 

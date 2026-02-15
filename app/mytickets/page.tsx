@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { tickets } from "@/db/schema/tickets";
+import { payments } from "@/db/schema/payments";
 import { events } from "@/db/schema/events";
 import { ticketTypes } from "@/db/schema/tickets";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { auth } from "@/auth";
 import Navbar from "@/components/navbar";
 import Link from "next/link";
@@ -40,6 +41,41 @@ export default async function MyTicketsPage() {
     .where(eq(tickets.userId, userId))
     .orderBy(desc(tickets.createdAt));
 
+  // also show pending payments as provisional tickets
+  const pendingPayments = await db
+    .select({
+      id: payments.id,
+      createdAt: payments.createdAt,
+      amount: payments.amount,
+      eventTitle: events.title,
+      eventDate: events.startDate,
+      eventLocation: events.location,
+      eventSlug: events.slug,
+      ticketTypeName: ticketTypes.name,
+      receiptImageUrl: payments.receiptImageUrl,
+    })
+    .from(payments)
+    .leftJoin(events, eq(payments.eventId, events.id))
+    .leftJoin(ticketTypes, eq(payments.ticketTypeId, ticketTypes.id))
+    .where(and(eq(payments.userId, userId), eq(payments.status, "PENDING")))
+    .orderBy(desc(payments.createdAt));
+
+  const pendingAsTickets = pendingPayments.map((p) => ({
+    id: `pending-${p.id}`,
+    status: "PENDING",
+    createdAt: p.createdAt,
+    eventTitle: p.eventTitle,
+    eventDate: p.eventDate,
+    eventLocation: p.eventLocation,
+    eventSlug: p.eventSlug,
+    ticketTypeName: p.ticketTypeName,
+    receiptImageUrl: p.receiptImageUrl,
+  }));
+
+  const combinedTickets = [...pendingAsTickets, ...userTickets].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
   return (
     <div className="min-h-screen pb-20 bg-background text-white">
       <Navbar />
@@ -59,7 +95,7 @@ export default async function MyTicketsPage() {
             your new ticket is approved.
           </p>
         </div>
-        {userTickets.length === 0 ? (
+        {combinedTickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/2">
             <div className="text-5xl mb-4">🎫</div>
             <h2 className="text-xl font-semibold mb-2">No tickets available</h2>
@@ -72,7 +108,7 @@ export default async function MyTicketsPage() {
           </div>
         ) : (
           <div className="grid gap-6">
-            {userTickets.map((t) => (
+            {combinedTickets.map((t) => (
               <div
                 key={t.id}
                 className="glass-card flex flex-col md:flex-row rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/20 transition-all"
@@ -83,8 +119,10 @@ export default async function MyTicketsPage() {
                     t.status === "VALID"
                       ? "bg-green-500"
                       : t.status === "USED"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
+                        ? "bg-yellow-500"
+                        : t.status === "PENDING"
+                          ? "bg-amber-500"
+                          : "bg-red-500"
                   }`}
                 />
 
@@ -96,10 +134,12 @@ export default async function MyTicketsPage() {
                           t.status === "VALID"
                             ? "bg-green-500/10 text-green-400"
                             : t.status === "CANCELLED"
-                            ? "bg-red-500/10 text-red-400"
-                            : t.status === "USED"
-                            ? "bg-yellow-500/10 text-yellow-400"
-                            : "bg-gray-500/10 text-gray-400"
+                              ? "bg-red-500/10 text-red-400"
+                              : t.status === "USED"
+                                ? "bg-yellow-500/10 text-yellow-400"
+                                : t.status === "PENDING"
+                                  ? "bg-amber-500/10 text-amber-300"
+                                  : "bg-gray-500/10 text-gray-400"
                         }`}
                       >
                         {t.status}
