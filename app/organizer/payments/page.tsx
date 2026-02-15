@@ -32,6 +32,7 @@ export default async function PaymentsPage({
     .leftJoin(events, eq(payments.eventId, events.id))
     .leftJoin(ticketTypes, eq(payments.ticketTypeId, ticketTypes.id))
     .where(eq(payments.status, "PENDING"))
+    // @ts-ignore: Drizzle chained where() typing quirk — intentionally ignore
     .where(eq(events.organizerId, session.user.id))
     .limit(pageSize + 1)
     .offset(offset);

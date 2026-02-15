@@ -131,9 +131,6 @@ export default async function OrganizerPaymentPage({
             <p className="text-sm font-bold text-emerald-300 mt-3">
               Amount: ETB {(payment.amount / 100).toFixed(2)}
             </p>
-            {payment.note && (
-              <p className="text-sm text-gray-300 mt-2">Note: {payment.note}</p>
-            )}
           </div>
 
           <div className="p-6 rounded-2xl bg-white/3 border border-white/6">
