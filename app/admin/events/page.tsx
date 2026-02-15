@@ -19,6 +19,13 @@ export default async function AdminEventsPage() {
     <div className="min-h-screen pb-20 bg-background text-white">
       <main className="pt-24 px-6 max-w-5xl mx-auto">
         <header className="mb-8">
+          <Link
+            href="/admin"
+            className="inline-flex items-center text-sm text-indigo-400 hover:text-indigo-300 mb-2"
+          >
+            ← Back to dashboard
+          </Link>
+
           <h1 className="text-3xl font-bold">Event Management</h1>
           <p className="text-gray-400">
             Create, edit, publish and unpublish events.

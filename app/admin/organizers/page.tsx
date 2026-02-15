@@ -5,14 +5,14 @@ import { users } from "@/db/schema/users";
 import { desc, sql } from "drizzle-orm";
 import AdminUserRow from "@/components/admin-user-row";
 
-export default async function AdminUsersPage() {
+export default async function AdminOrganizersPage() {
   await requireAdmin();
 
-  // Only show regular users (exclude ORGANIZER/ADMIN/SUPPORT)
+  // Only select users with role = 'ORGANIZER'
   const list = await db
     .select()
     .from(users)
-    .where(sql`role = 'USER'`)
+    .where(sql`role = 'ORGANIZER'`)
     .orderBy(desc(users.createdAt));
 
   return (
@@ -26,10 +26,8 @@ export default async function AdminUsersPage() {
             ← Back to dashboard
           </Link>
 
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-gray-400">
-            View and edit user profiles and roles.
-          </p>
+          <h1 className="text-3xl font-bold">Organizers</h1>
+          <p className="text-gray-400">View and manage organizer accounts.</p>
         </header>
 
         <div className="grid gap-4">

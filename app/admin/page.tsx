@@ -13,9 +13,11 @@ async function getAdminStats() {
     .from(events);
   const totalEvents = Number((totalEventsRes as any)[0]?.cnt ?? 0);
 
+  // Count only regular users (exclude organizers/admin/support)
   const totalUsersRes = await db
     .select({ cnt: sql<number>`count(*)` })
-    .from(users);
+    .from(users)
+    .where(sql`role = 'USER'`);
   const totalUsers = Number((totalUsersRes as any)[0]?.cnt ?? 0);
 
   const totalOrganizersRes = await db
@@ -98,16 +100,40 @@ export default async function AdminPage() {
             title="Total Events"
             value={stats.totalEvents.toString()}
             icon={<CalendarDays className="w-6 h-6 text-indigo-400" />}
+            cta={
+              <Link
+                href="/admin/events"
+                className="text-sm text-indigo-300 hover:text-white"
+              >
+                View events
+              </Link>
+            }
           />
           <StatCard
             title="Total Users"
             value={stats.totalUsers.toString()}
             icon={<Users className="w-6 h-6 text-blue-400" />}
+            cta={
+              <Link
+                href="/admin/users"
+                className="text-sm text-indigo-300 hover:text-white"
+              >
+                View users
+              </Link>
+            }
           />
           <StatCard
-            title="Organizers"
+            title="Total Organizers"
             value={stats.totalOrganizers.toString()}
             icon={<Users className="w-6 h-6 text-emerald-400" />}
+            cta={
+              <Link
+                href="/admin/organizers"
+                className="text-sm text-indigo-300 hover:text-white"
+              >
+                View organizers
+              </Link>
+            }
           />
         </section>
 
