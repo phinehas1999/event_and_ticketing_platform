@@ -38,8 +38,8 @@ async function getAdminStats() {
     .from(payments)
     .where(sql`status = 'APPROVED'`);
 
-  const approvedAmounts: number[] = (approvedPaymentsRes as any).map(
-    (r: any) => Number(r.amount ?? 0),
+  const approvedAmounts: number[] = (approvedPaymentsRes as any).map((r: any) =>
+    Number(r.amount ?? 0),
   );
 
   let serviceFee = 0;

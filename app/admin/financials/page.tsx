@@ -8,17 +8,17 @@ async function getFinancials() {
   const revenueRes = await db
     .select({ rev: sql<number>`coalesce(sum(${payments.amount}), 0)` })
     .from(payments)
-    .where(eq(payments.status, 'APPROVED'));
+    .where(eq(payments.status, "APPROVED"));
   const revenue = Number((revenueRes as any)[0]?.rev ?? 0);
 
   // Per-payment calculation: 5% fee, then 15% VAT on that fee, rounding per payment
   const approvedPaymentsRes = await db
     .select({ amount: payments.amount })
     .from(payments)
-    .where(eq(payments.status, 'APPROVED'));
+    .where(eq(payments.status, "APPROVED"));
 
-  const approvedAmounts: number[] = (approvedPaymentsRes as any).map(
-    (r: any) => Number(r.amount ?? 0),
+  const approvedAmounts: number[] = (approvedPaymentsRes as any).map((r: any) =>
+    Number(r.amount ?? 0),
   );
 
   let serviceFee = 0;
@@ -45,7 +45,7 @@ async function getFinancials() {
     .leftJoin(users, eq(users.id, payments.userId))
     .leftJoin(events, eq(events.id, payments.eventId))
     .leftJoin(ticketTypes, eq(ticketTypes.id, payments.ticketTypeId))
-    .where(eq(payments.status, 'APPROVED'))
+    .where(eq(payments.status, "APPROVED"))
     .orderBy(desc(payments.createdAt))
     .limit(50);
 
@@ -124,17 +124,35 @@ export default async function AdminFinancialsPage() {
                   const feeVat = Math.round(fee * 0.15);
                   const profit = fee - feeVat;
                   return (
-                    <li key={p.id} className="flex items-center justify-between">
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between"
+                    >
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{p.eventTitle || "(unknown event)"}</div>
-                        <div className="text-xs text-gray-400">{p.userName || p.userEmail || "(unknown purchaser)"} — {p.ticketTypeName || "(ticket)"}</div>
-                        <div className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleString()}</div>
+                        <div className="font-medium text-sm">
+                          {p.eventTitle || "(unknown event)"}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {p.userName || p.userEmail || "(unknown purchaser)"} —{" "}
+                          {p.ticketTypeName || "(ticket)"}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(p.createdAt).toLocaleString()}
+                        </div>
                       </div>
                       <div className="w-40 text-right">
-                        <div className="text-sm text-gray-300">{formatCurrency(amt)}</div>
-                        <div className="text-xs text-gray-400">Fee: {formatCurrency(fee)}</div>
-                        <div className="text-xs text-gray-400">VAT: {formatCurrency(feeVat)}</div>
-                        <div className="text-sm font-semibold">Profit: {formatCurrency(profit)}</div>
+                        <div className="text-sm text-gray-300">
+                          {formatCurrency(amt)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Fee: {formatCurrency(fee)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          VAT: {formatCurrency(feeVat)}
+                        </div>
+                        <div className="text-sm font-semibold">
+                          Profit: {formatCurrency(profit)}
+                        </div>
                       </div>
                     </li>
                   );
