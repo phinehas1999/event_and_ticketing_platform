@@ -90,9 +90,9 @@ export default async function MyTicketsPage() {
 
         <div className="mb-8">
           <p className="text-gray-500 text-center max-w-xl mx-auto">
-            If you've just purchased a ticket, it may take a while to appear
-            here—even if you can see previous tickets. Please check back once
-            your new ticket is approved.
+            If you've just purchased a ticket, please wait a moment for it to
+            appear here. Pending payments will show up as "PENDING" until
+            they're reviewed by the organizer.
           </p>
         </div>
         {combinedTickets.length === 0 ? (
