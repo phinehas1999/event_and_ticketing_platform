@@ -1,102 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Event & Ticketing Platform
 
-## Getting Started
+A modern, full-stack event management and ticketing solution built with Next.js 16, TypeScript, and PostgreSQL. This platform serves three distinct user roles: Administrators, Organizers, and Attendees, offering a complete lifecycle for event creation, ticket sales, and management.
 
-First, run the development server:
+![Platform Overview](public/preview/platform_overview.png)
+_(Main landing page)_
+
+## 🚀 Features
+
+### For Attendees
+
+- **Browse Events**: Discover events with a clean, responsive interface.
+- **Ticket Reservation**: Seamless booking flow for reserving tickets.
+- **My Tickets**: Dedicated area to view and manage purchased tickets.
+- **Secure Authentication**: Easy sign-up and login process.
+
+### For Organizers
+
+- **Organizer Dashboard**: A central hub to track sales and event performance.
+- **Event Management**: Create, edit, and publish events with ease.
+- **Sales Tracking**: Real-time insights into ticket sales and revenue.
+- **Financial Management**: Manage bank accounts and track payment statuses.
+
+![Organizer Dashboard](public/preview/organizer_dashboard.png)
+_(Organizer dashboard)_
+
+### For Administrators
+
+- **Platform Oversight**: Global view of all events, users, and organizers.
+- **User Management**: Manage user roles and permissions.
+- **Financial Control**: Monitor transactions and payouts.
+- **Content Moderation**: Review and approve events/organizers.
+
+![Admin Panel](public/preview/admin_panel.png)
+_(Admin dashboard)_
+
+## 🛠 Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+- **Authentication**: [NextAuth.js v5](https://authjs.dev/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Package Manager**: NPM
+
+## 📂 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+├── app/                  # Next.js App Router pages and API routes
+│   ├── admin/            # Admin-specific pages
+│   ├── api/              # Backend API endpoints
+│   ├── dashboard/        # User dashboard
+│   ├── events/           # Public event listings
+│   ├── organizer/        # Organizer-specific pages
+│   └── ...
+├── components/           # Reusable UI components
+├── db/                   # Database configuration and schemas
+│   ├── schema/           # Drizzle schema definitions
+│   └── index.ts          # DB connection setup
+├── drizzle/              # Database migration files
+├── lib/                  # Utility functions and shared logic
+├── public/               # Static assets
+└── types/                # TypeScript type definitions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚡ Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Follow these steps to set up the project locally on your machine.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
 
-## Learn More
+- Node.js (v18 or higher)
+- PostgreSQL database
 
-To learn more about Next.js, take a look at the following resources:
+### Installation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1.  **Clone the repository**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+    ```bash
+    git clone https://github.com/yourusername/event-ticketing-platform.git
+    cd event-ticketing-platform
+    ```
 
-## Deploy on Vercel
+2.  **Install dependencies**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+    ```bash
+    npm install
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3.  **Environment Setup**
+    Create a `.env` file in the root directory and add the following variables:
 
+    ```env
+    DATABASE_URL="postgresql://user:password@localhost:5432/event_db"
+    AUTH_SECRET="your-super-secret-auth-key"
+    NEXTAUTH_URL="http://localhost:3000"
+    ```
 
+4.  **Database Setup**
+    Push the schema to your database:
 
+    ```bash
+    npm run db:migrate
+    ```
 
+5.  **Run the Development Server**
 
-1. Design the Database Schema
- - Define tables: users (with role), events, ticket_types, payments, tickets.
- - Model state transitions as enums/fields (event status, payment status, ticket status).
- - Include fields for file URLs (for receipts), references, and relations.
- - Use Drizzle ORM to define and migrate your schema.
+    ```bash
+    npm run dev
+    ```
 
-2. Set Up Authentication & Role Management
- - Implement authentication (NextAuth.js or similar).
- - On signup, default role = USER.
- - Add logic for admin to promote users to ORGANIZER or ADMIN.
- - Ensure role is included in session/context.
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-3. Implement Public (Visitor) Pages
- - Landing page, event listing, event details.
- - No reservation or payment for visitors.
- - “Sign up to reserve” CTA.
+## 📜 Scripts
 
-4. User Flows
- - After login, redirect to /dashboard.
- - Implement event browsing, ticket reservation, payment upload, and dashboard for users.
- - Show pending/approved/rejected payments and tickets.
+- `npm run dev`: Starts the development server.
+- `npm run build`: Builds the application for production.
+- `npm run start`: Starts the production server.
+- `npm run lint`: Runs ESLint.
+- `npm run db:generate`: Generates Drizzle migrations based on schema changes.
+- `npm run db:migrate`: Applies migrations to the database.
+- `npm run db:studio`: Opens Drizzle Studio to visualize database data.
 
-5. Organizer Flows
- - Organizer dashboard: event stats, ticket sales, pending payments.
- - Event creation/editing, ticket type creation.
- - Submit event for review (status: PENDING).
- - View/manage own events and payments.
+## 📷 Gallery
 
-6. Admin Flows
- - Admin dashboard: pending events, payments, organizer info.
- - Approve/reject events and payments.
- - On payment approval, issue ticket and update status.
- - On rejection, record reason.
+### Event Details
 
-7. File Upload Handling
- - Integrate with Cloudinary/S3 for receipt uploads.
- - Store URLs in DB, show previews in admin/organizer dashboards.
+![Event Details](public/preview/event_page.png)
+_(Single event page)_
 
-8. Permission & Access Control
- - Middleware to restrict access based on role.
- - Visitors: public only; Users: dashboard, payments; Organizers: own events/payments; Admin: all.
+### Ticket Purchase Flow
 
-9. State Transition Logic
- - Ensure all transitions (event, payment, ticket) are explicit and verifiable.
- - No automation—actions require user/admin intent.
+![Ticket Flow](public/preview/ticket_reservation.png)
+_(Ticket reservation modal)_
 
-10. Testing & Failure Handling
- - Test all flows, including edge/failure cases (wrong receipt, event cancellation, payment rejection).
+## 🤝 Contributing
 
-Recommended Build Order:
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Database schema (Drizzle + Neon)
-Authentication & role logic
-Public event browsing
-User dashboard & ticket reservation/payment
-Organizer dashboard & event creation
-Admin dashboard & moderation
-File upload integration
-Permission middleware
-State transition logic
-UI polish & error handling
+## 📄 License
+
+This project is licensed under the MIT License.
